@@ -1,0 +1,468 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#1b2440">
+<title>Mana Guess</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&family=Crimson+Pro:ital,wght@0,400;0,600;0,700;1,400&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#dfe4ee; --bg2:#cdd5e4; --ink:#1b2440; --muted:#56607a;
+  --parch:#f3ead6; --parch-edge:#cdbb94; --parch-ink:#2a2116;
+  --brass:#a87a26; --brass-ink:#fff8e8;
+  --ok:#2d7a4b; --bad:#a83a3a; --line:#b7c0d3;
+  --btn:#ffffff; --btn-ink:#1b2440;
+  --display:"Cinzel", "Trajan Pro", Georgia, serif;
+  --text:"Crimson Pro", Georgia, "Times New Roman", serif;
+  color-scheme:light;
+}
+@media (prefers-color-scheme:dark){
+  :root{
+    --bg:#141b31; --bg2:#1d2642; --ink:#e6e9f2; --muted:#9aa3bd;
+    --parch:#e9dfc6; --parch-edge:#9c8a62; --parch-ink:#231b10;
+    --brass:#d6a64a; --brass-ink:#1b1408;
+    --ok:#62c48a; --bad:#ef7b7b; --line:#33406a;
+    --btn:#253057; --btn-ink:#e6e9f2;
+    color-scheme:dark;
+  }
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{
+  background:radial-gradient(ellipse at 50% -10%, var(--bg2), var(--bg) 60%) fixed;
+  background-color:var(--bg);
+  color:var(--ink); font:18px/1.45 var(--text);
+  -webkit-text-size-adjust:100%; min-height:100vh;
+}
+button{font:inherit;color:inherit;touch-action:manipulation;cursor:pointer}
+button:focus-visible,input:focus-visible{outline:3px solid var(--brass);outline-offset:2px}
+button:disabled{cursor:default;opacity:.45}
+
+header{
+  position:sticky;top:0;z-index:5;background:var(--bg);
+  border-bottom:1px solid var(--line);padding:8px 12px;
+}
+.bar{display:flex;align-items:center;gap:8px;max-width:560px;margin:0 auto}
+.logo{font-family:var(--display);font-weight:700;font-size:17px;letter-spacing:.04em;margin-right:auto}
+.link{background:none;border:0;color:var(--muted);font-size:16px;padding:6px 4px;text-decoration:underline}
+#scores{display:flex;gap:6px;overflow-x:auto;max-width:560px;margin:6px auto 0;padding-bottom:2px;scrollbar-width:none}
+#scores:empty{display:none}
+.score{flex:0 0 auto;border:1px solid var(--line);border-radius:999px;padding:3px 12px;font-size:16px;white-space:nowrap}
+.score b{font-weight:700;margin-left:6px}
+.score.now{background:var(--brass);border-color:var(--brass);color:var(--brass-ink)}
+.score .hints{font-size:13px;font-weight:400;opacity:.7;margin-left:6px}
+.hintnote{font-size:14px;color:var(--muted);margin:2px 2px 0}
+
+main{max-width:560px;margin:0 auto;padding:14px 12px 40px}
+h1{font-family:var(--display);font-size:30px;line-height:1.15;margin:0 0 6px;font-weight:700}
+h2{font-family:var(--display);font-size:20px;margin:0 0 10px;font-weight:600}
+.muted{color:var(--muted)}
+.small{font-size:16px}
+.center{text-align:center}
+.lbl{display:block;font-weight:600;margin:14px 0 4px}
+.inp{width:100%;font:inherit;font-size:18px;padding:10px 12px;border-radius:10px;border:1px solid var(--line);background:var(--btn);color:var(--btn-ink)}
+
+.btn{border:1px solid var(--line);background:var(--btn);color:var(--btn-ink);border-radius:10px;padding:12px 16px;font-weight:600}
+.btn.primary{background:var(--brass);border-color:var(--brass);color:var(--brass-ink)}
+.wide{display:block;width:100%;margin-top:16px;font-size:19px}
+.stepper{display:flex;align-items:center;gap:16px}
+.stepper .btn{width:52px;height:52px;padding:0;font-size:26px}
+.stepper span{font-size:28px;font-weight:700;min-width:1.5em;text-align:center}
+.or{text-align:center;color:var(--muted);margin:14px 0 0}
+
+.turn{display:flex;justify-content:space-between;align-items:baseline;margin:0 2px 10px}
+.turn strong{font-family:var(--display);font-size:20px}
+
+/* The card */
+.mtg{
+  background:var(--parch);color:var(--parch-ink);
+  border:10px solid #1a1712;border-radius:16px;
+  box-shadow:0 0 0 1px var(--parch-edge) inset, 0 6px 20px rgba(0,0,0,.25);
+  padding:12px 14px 14px;position:relative;
+}
+.titlebar{display:flex;align-items:center;gap:8px;border-bottom:2px solid var(--parch-edge);padding-bottom:6px}
+.cname{font-family:var(--display);font-weight:700;font-size:19px;line-height:1.2;flex:1}
+.cname .hid{color:#8a7a5c;font-weight:600}
+.cost{display:flex;gap:2px;flex:0 0 auto}
+.cost .q{width:22px;height:22px;border-radius:50%;border:1.5px dashed #8a7a5c;display:grid;place-items:center;font-size:14px;color:#8a7a5c;font-weight:700}
+.art{margin:10px 0 0}
+.art img{display:block;width:100%;border-radius:4px;border:1px solid var(--parch-edge)}
+.art figcaption{font-size:14px;color:#6b5d42;margin-top:2px;text-align:right}
+.type{font-weight:700;margin-top:8px;padding:4px 0;border-bottom:1px solid var(--parch-edge)}
+.rules{margin-top:8px;font-size:19px;line-height:1.38}
+.rules p{margin:0 0 6px}
+.rem{color:#5d5037}
+.flavor{font-style:italic;margin-top:8px;padding-top:6px;border-top:1px solid var(--parch-edge);color:#4a3e28}
+.this{background:#e1cf9f;border-radius:4px;padding:0 3px;font-style:normal;white-space:nowrap}
+.foot{display:flex;justify-content:space-between;align-items:flex-end;margin-top:10px;gap:10px}
+.set{font-size:15px;color:#5d5037}
+.pt{margin-left:auto;background:#1a1712;color:var(--parch);font-weight:700;font-size:20px;padding:2px 12px;border-radius:8px;white-space:nowrap}
+.sym{height:.95em;width:.95em;vertical-align:-.1em;margin:0 1px}
+
+.reveals{display:flex;flex-wrap:wrap;gap:8px;margin:12px 0 4px}
+.chip{border:1px solid var(--line);background:var(--btn);color:var(--btn-ink);border-radius:999px;padding:8px 14px;font-size:16px}
+.chip.on{opacity:.55}
+
+.guess{margin-top:16px;background:var(--btn);border:1px solid var(--line);border-radius:14px;padding:14px}
+.nums{display:grid;grid-template-columns:repeat(6,1fr);gap:8px}
+.num{aspect-ratio:1;border-radius:50%;border:2px solid var(--line);background:transparent;color:var(--ink);font-size:20px;font-weight:700;padding:0}
+.num.sel{background:var(--brass);border-color:var(--brass);color:var(--brass-ink)}
+.colors{display:grid;grid-template-columns:repeat(5,1fr);gap:8px}
+.clr{display:flex;flex-direction:column;align-items:center;gap:4px;padding:10px 2px;border-radius:12px;border:2px solid var(--line);background:transparent;color:var(--ink);font-size:14px}
+.clr img{width:34px;height:34px;filter:grayscale(.85) opacity(.55)}
+.clr.sel{border-color:var(--brass);background:color-mix(in srgb, var(--brass) 18%, transparent)}
+.clr.sel img{filter:none}
+.pick{margin-top:10px}
+
+.result{border-radius:12px;padding:10px 12px;margin-top:16px;border:1.5px solid}
+.result.ok{border-color:var(--ok)}
+.result.bad{border-color:var(--bad)}
+.result .head{font-weight:700}
+.result.ok .head{color:var(--ok)}
+.result.bad .head{color:var(--bad)}
+.full{display:block;width:100%;max-width:340px;margin:16px auto 0;border-radius:4.75% / 3.5%}
+.src{display:block;text-align:center;margin-top:6px;color:var(--muted)}
+.tally{text-align:center;font-family:var(--display);font-size:20px;margin-top:14px}
+
+.spinner{width:42px;height:42px;margin:30px auto 10px;border-radius:50%;border:4px solid var(--line);border-top-color:var(--brass);animation:spin 1s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+@media (prefers-reduced-motion:reduce){.spinner{animation-duration:3s}}
+footer{max-width:560px;margin:0 auto;padding:0 12px 24px;font-size:13px;color:var(--muted);text-align:center}
+footer a{color:inherit}
+</style>
+</head>
+<body>
+<header>
+  <div class="bar">
+    <span class="logo">Mana Guess</span>
+    <button class="link" id="newGame" hidden>New game</button>
+  </div>
+  <div id="scores"></div>
+</header>
+<main id="app"></main>
+<footer>
+  Card data and images from <a href="https://scryfall.com" target="_blank" rel="noopener">Scryfall</a>.
+  Unofficial Fan Content permitted under the Wizards of the Coast Fan Content Policy. Not approved or endorsed by Wizards.
+</footer>
+
+<script>
+"use strict";
+const $ = s => document.querySelector(s);
+const app = $('#app');
+const STORE = 'mana-guess-v1';
+const COLORS = [['W','White'],['U','Blue'],['B','Black'],['R','Red'],['G','Green']];
+const REVEALS = [['name','Name'],['flavor','Flavor text'],['art','Art'],['set','Set & year']];
+const QUERY = 'game:paper -t:land -is:funny';
+const OK_LAYOUTS = new Set(['normal','leveler','class','saga','mutate','case','prototype']);
+const symURL = s => 'https://svgs.scryfall.io/card-symbols/' + s.replace(/\//g,'') + '.svg';
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+
+let S = {
+  players: [], turn: 0, cardNo: 0, card: null, phase: 'setup',
+  rev: {}, cmcGuess: null, cmcOk: null, colorSel: new Set(), colorOk: null, next: null
+};
+
+/* ---------- storage ---------- */
+function save(){
+  try { localStorage.setItem(STORE, JSON.stringify({players:S.players, turn:S.turn, cardNo:S.cardNo})); } catch(e){}
+}
+function load(){
+  try {
+    const d = JSON.parse(localStorage.getItem(STORE));
+    if (d && Array.isArray(d.players) && d.players.length) return d;
+  } catch(e){}
+  return null;
+}
+
+/* ---------- Scryfall ---------- */
+function validCard(c){
+  if (!c || c.object !== 'card') return false;
+  if (!OK_LAYOUTS.has(c.layout)) return false;
+  if (c.card_faces) return false;                       // skip double-faced / split cards
+  if (/land/i.test(c.type_line || '')) return false;
+  const m = c.mana_cost || '';
+  if (/\{[XYZ]\}/.test(m)) return false;                 // no X costs
+  if (/\/P\}|\{P\}/.test(m)) return false;               // no Phyrexian mana
+  if (!Array.isArray(c.colors) || typeof c.cmc !== 'number') return false;
+  if (!Number.isInteger(c.cmc)) return false;
+  return true;
+}
+async function fetchCard(){
+  let lastErr = 'No suitable card found';
+  for (let i = 0; i < 20; i++){
+    try {
+      const r = await fetch('https://api.scryfall.com/cards/random?q=' + encodeURIComponent(QUERY),
+                            {headers:{Accept:'application/json'}});
+      if (r.ok){
+        const c = await r.json();
+        if (validCard(c)) return c;
+      } else {
+        lastErr = 'Scryfall answered ' + r.status;
+        await sleep(400);
+      }
+    } catch(e){ lastErr = 'Network error: check your connection'; await sleep(400); }
+    await sleep(110);                                     // be polite to Scryfall's rate limit
+  }
+  throw new Error(lastErr);
+}
+
+/* ---------- text formatting ---------- */
+function esc(s){
+  return String(s ?? '').replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
+}
+function reEsc(s){ return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); }
+
+function fmt(text, card, showName){
+  let s = esc(text);
+  if (!showName){
+    const names = [card.name];
+    if (card.name.includes(',')){                        // "Gluntch, the Bestower" → "Gluntch"
+      const short = card.name.split(',')[0].trim();
+      if (short.length >= 3) names.push(short);
+    }
+    for (const n of names){
+      s = s.replace(new RegExp('(?<![A-Za-z])' + reEsc(esc(n)) + '(?![A-Za-z])', 'g'), '\u0001');
+    }
+  }
+  s = s.replace(/\(([^()]*)\)/g, '<i class="rem">($1)</i>');
+  s = s.replace(/\{([^}]+)\}/g, (m, sym) =>
+    `<img class="sym" src="${symURL(sym)}" alt="${m}" onerror="this.replaceWith(this.alt)">`);
+  s = s.replace(/\u0001/g, '<span class="this">[this card]</span>');
+  return s.split('\n').map(p => `<p>${p}</p>`).join('');
+}
+function inline(text, card, showName){
+  return fmt(text, card, showName).replace(/<\/?p>/g, ' ').trim();
+}
+function colorNames(list){
+  if (!list.length) return 'No colored mana';
+  return COLORS.filter(([k]) => list.includes(k)).map(([k,n]) =>
+    `<img class="sym" src="${symURL(k)}" alt=""> ${n}`).join(', ');
+}
+// Colors of mana that appear in the mana cost, e.g. {2}{W/U}{B} → W, U, B.
+// Ignores color indicators, Devoid, abilities and color identity.
+function costColors(c){
+  const found = new Set();
+  for (const [, sym] of (c.mana_cost || '').matchAll(/\{([^}]+)\}/g)){
+    for (const [k] of COLORS) if (sym.split('/').includes(k)) found.add(k);
+  }
+  return COLORS.map(([k]) => k).filter(k => found.has(k));
+}
+
+/* ---------- scoreboard ---------- */
+function renderScores(){
+  const inGame = S.phase !== 'setup';
+  $('#newGame').hidden = !inGame;
+  $('#scores').innerHTML = inGame ? S.players.map((p,i) =>
+    `<span class="score ${i === S.turn ? 'now' : ''}">${esc(p.name)}<b>${p.score}</b><span class="hints">${p.hints || 0} ${(p.hints || 0) === 1 ? 'hint' : 'hints'}</span></span>`).join('') : '';
+  const now = $('#scores .now');
+  if (now) now.scrollIntoView({inline:'center', block:'nearest'});
+}
+$('#newGame').onclick = () => {
+  if (confirm('Leave this game and set up a new one? Scores are kept until you start a new game.')) renderSetup();
+};
+
+/* ---------- setup ---------- */
+function renderSetup(){
+  S.phase = 'setup';
+  renderScores();
+  const saved = load();
+  let n = saved ? saved.players.length : 2;
+  const prefill = saved ? saved.players.map(p => p.name) : [];
+  app.innerHTML = `
+    <h1>Guess the cost</h1>
+    <p class="muted">A random Magic card appears with its name and cost hidden. Read the rules text, then guess its mana value and which colors of mana appear in its cost. One point for each.</p>
+    ${saved ? `<button class="btn primary wide" id="resume">Continue game with ${esc(saved.players.map(p=>p.name).join(', '))}</button>
+               <p class="or">or start a new game</p>` : ''}
+    <label class="lbl">Number of players</label>
+    <div class="stepper">
+      <button class="btn" id="minus" aria-label="Fewer players">−</button>
+      <span id="n"></span>
+      <button class="btn" id="plus" aria-label="More players">+</button>
+    </div>
+    <div id="names"></div>
+    <button class="btn ${saved ? '' : 'primary'} wide" id="start">Start new game</button>`;
+
+  function drawNames(){
+    $('#n').textContent = n;
+    const box = $('#names');
+    const cur = [...box.querySelectorAll('input')].map(i => i.value);
+    box.innerHTML = '';
+    for (let i = 0; i < n; i++){
+      const v = cur[i] ?? prefill[i] ?? '';
+      box.insertAdjacentHTML('beforeend',
+        `<label class="lbl" for="p${i}">Player ${i+1}</label>
+         <input class="inp" id="p${i}" maxlength="20" autocomplete="off" placeholder="Player ${i+1}" value="${esc(v)}">`);
+    }
+  }
+  drawNames();
+  $('#minus').onclick = () => { if (n > 1){ n--; drawNames(); } };
+  $('#plus').onclick  = () => { if (n < 12){ n++; drawNames(); } };
+  $('#start').onclick = () => {
+    const names = [...document.querySelectorAll('#names input')].map((el,i) => el.value.trim() || `Player ${i+1}`);
+    S.players = names.map(name => ({name, score:0, hints:0}));
+    S.turn = 0; S.cardNo = 0;
+    save(); nextCard();
+  };
+  if (saved) $('#resume').onclick = () => {
+    S.players = saved.players; S.turn = saved.turn % saved.players.length; S.cardNo = saved.cardNo || 0;
+    nextCard();
+  };
+}
+
+/* ---------- game flow ---------- */
+async function nextCard(){
+  S.phase = 'loading';
+  renderScores();
+  app.innerHTML = `<div class="center"><div class="spinner"></div><p class="muted">Drawing a card…</p></div>`;
+  let c = null;
+  try {
+    if (S.next){ c = await S.next; S.next = null; }
+    if (!c) c = await fetchCard();
+  } catch(e){
+    app.innerHTML = `<div class="center"><h2>Couldn't draw a card</h2>
+      <p class="muted">${esc(e.message)}</p>
+      <button class="btn primary" id="retry">Try again</button></div>`;
+    $('#retry').onclick = nextCard;
+    return;
+  }
+  S.card = c; S.cardNo++;
+  S.rev = {}; S.cmcGuess = null; S.cmcOk = null; S.colorSel = new Set(); S.colorOk = null;
+  S.phase = 'cmc';
+  save();
+  renderGame();
+  window.scrollTo({top:0});
+  S.next = fetchCard().catch(() => null);                // prefetch the next card
+}
+
+function cardHTML(){
+  const c = S.card, done = S.phase === 'done';
+  const show = k => done || S.rev[k];
+  const nameShown = show('name');
+  let h = '<article class="mtg">';
+  h += `<div class="titlebar">
+          <div class="cname">${nameShown ? esc(c.name) : '<span class="hid">Unknown card</span>'}</div>
+          <div class="cost">${done
+              ? (c.mana_cost ? inline(c.mana_cost, c, true) : '<span class="small">no cost</span>')
+              : ''}</div>
+        </div>`;
+  if (show('art') && c.image_uris && c.image_uris.art_crop){
+    h += `<figure class="art"><img src="${esc(c.image_uris.art_crop)}" alt="Card art">
+          <figcaption>Illustrated by ${esc(c.artist || 'unknown artist')}</figcaption></figure>`;
+  }
+  h += `<div class="type">${inline(c.type_line, c, nameShown)}</div>`;
+  h += `<div class="rules">${c.oracle_text ? fmt(c.oracle_text, c, nameShown) : '<p><i>No rules text.</i></p>'}</div>`;
+  if (show('flavor')){
+    h += `<div class="flavor">${c.flavor_text ? fmt(c.flavor_text, c, nameShown) : '<p>This printing has no flavor text.</p>'}</div>`;
+  }
+  let stats = '';
+  if (c.power != null) stats = `${esc(c.power)}/${esc(c.toughness)}`;
+  else if (c.loyalty != null) stats = `Loyalty ${esc(c.loyalty)}`;
+  else if (c.defense != null) stats = `Defense ${esc(c.defense)}`;
+  const setLine = show('set') ? `${esc(c.set_name)} (${esc((c.set || '').toUpperCase())}), ${esc((c.released_at || '').slice(0,4))}` : '';
+  if (stats || setLine) h += `<div class="foot"><span class="set">${setLine}</span>${stats ? `<span class="pt">${stats}</span>` : ''}</div>`;
+  return h + '</article>';
+}
+
+function revealsHTML(){
+  if (S.phase === 'done') return '';
+  return `<div class="reveals">${REVEALS.map(([k,l]) =>
+    `<button class="chip ${S.rev[k] ? 'on' : ''}" data-rev="${k}" ${S.rev[k] ? 'disabled' : ''}>
+       ${S.rev[k] ? 'Shown: ' : 'Show '}${l.toLowerCase()}</button>`).join('')}</div>
+    <p class="hintnote">Each reveal adds 1 to your hint count. Hints only break ties: fewer hints wins.</p>`;
+}
+
+function cmcResultHTML(){
+  const c = S.card;
+  return S.cmcOk
+    ? `<div class="result ok"><div class="head">Mana value: correct, +1 point</div>It is ${c.cmc}.</div>`
+    : `<div class="result bad"><div class="head">Mana value: not quite</div>You guessed ${S.cmcGuess}. The mana value is ${c.cmc}.</div>`;
+}
+
+function guessHTML(){
+  const c = S.card, player = esc(S.players[S.turn].name);
+  if (S.phase === 'cmc'){
+    let nums = '';
+    for (let i = 0; i <= 16; i++) nums += `<button class="num ${S.cmcGuess === i ? 'sel' : ''}" data-cmc="${i}">${i}</button>`;
+    return `<section class="guess">
+      <h2>What's the mana value?</h2>
+      <div class="nums">${nums}</div>
+      <button class="btn primary wide" id="lockCmc" ${S.cmcGuess == null ? 'disabled' : ''}>Lock in mana value</button>
+    </section>`;
+  }
+  if (S.phase === 'color'){
+    const sel = [...S.colorSel];
+    return cmcResultHTML() + `<section class="guess">
+      <h2>Which colors of mana are in its cost?</h2>
+      <p class="muted small" style="margin-top:-6px">Only the mana symbols in the casting cost count, not color identity and not costs in the rules text. A hybrid symbol like {W/U} counts as both colors. Select every color, or none if the cost has no colored mana.</p>
+      <div class="colors">${COLORS.map(([k,n]) =>
+        `<button class="clr ${S.colorSel.has(k) ? 'sel' : ''}" data-clr="${k}" aria-pressed="${S.colorSel.has(k)}">
+           <img src="${symURL(k)}" alt="">${n}</button>`).join('')}</div>
+      <p class="pick small">Your guess: <b>${colorNames(sel)}</b></p>
+      <button class="btn primary wide" id="lockClr">Lock in colors</button>
+    </section>`;
+  }
+  // done
+  const pts = (S.cmcOk ? 1 : 0) + (S.colorOk ? 1 : 0);
+  const nextName = esc(S.players[(S.turn + 1) % S.players.length].name);
+  const img = c.image_uris && (c.image_uris.normal || c.image_uris.large);
+  return cmcResultHTML() +
+    (S.colorOk
+      ? `<div class="result ok"><div class="head">Cost colors: correct, +1 point</div>${colorNames(costColors(c))}</div>`
+      : `<div class="result bad"><div class="head">Cost colors: not quite</div>You guessed ${colorNames([...S.colorSel])}. The cost has ${colorNames(costColors(c))}.</div>`) +
+    `<p class="tally">${player} scores ${pts} of 2</p>
+     ${img ? `<img class="full" src="${esc(img)}" alt="${esc(c.name)}">` : ''}
+     <a class="src small" href="${esc(c.scryfall_uri)}" target="_blank" rel="noopener">View on Scryfall</a>
+     <button class="btn primary wide" id="next">Next card: ${nextName}'s turn</button>`;
+}
+
+function renderGame(){
+  renderScores();
+  const multi = S.players.length > 1;
+  app.innerHTML = `
+    <div class="turn">
+      <strong>${multi ? esc(S.players[S.turn].name) + "'s turn" : 'Your card'}</strong>
+      <span class="muted small">Card ${S.cardNo}</span>
+    </div>
+    ${cardHTML()}
+    ${revealsHTML()}
+    ${guessHTML()}`;
+
+  app.querySelectorAll('[data-rev]').forEach(b => b.onclick = () => {
+    if (S.rev[b.dataset.rev]) return;
+    S.rev[b.dataset.rev] = true;
+    const p = S.players[S.turn];
+    p.hints = (p.hints || 0) + 1;
+    save(); renderGame();
+  });
+  app.querySelectorAll('[data-cmc]').forEach(b => b.onclick = () => { S.cmcGuess = +b.dataset.cmc; renderGame(); });
+  app.querySelectorAll('[data-clr]').forEach(b => b.onclick = () => {
+    const k = b.dataset.clr;
+    S.colorSel.has(k) ? S.colorSel.delete(k) : S.colorSel.add(k);
+    renderGame();
+  });
+  const lc = $('#lockCmc');
+  if (lc) lc.onclick = () => {
+    S.cmcOk = S.cmcGuess === S.card.cmc;
+    if (S.cmcOk) S.players[S.turn].score++;
+    S.phase = 'color'; save(); renderGame();
+    const r = app.querySelector('.result'); if (r) r.scrollIntoView({block:'start', behavior:'smooth'});
+  };
+  const lk = $('#lockClr');
+  if (lk) lk.onclick = () => {
+    const actual = new Set(costColors(S.card));
+    S.colorOk = actual.size === S.colorSel.size && [...actual].every(k => S.colorSel.has(k));
+    if (S.colorOk) S.players[S.turn].score++;
+    S.phase = 'done'; save(); renderGame();
+    const r = app.querySelector('.result'); if (r) r.scrollIntoView({block:'start', behavior:'smooth'});
+  };
+  const nx = $('#next');
+  if (nx) nx.onclick = () => { S.turn = (S.turn + 1) % S.players.length; save(); nextCard(); };
+}
+
+renderSetup();
+</script>
+</body>
+</html>
